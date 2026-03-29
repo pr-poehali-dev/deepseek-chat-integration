@@ -619,14 +619,38 @@ function DiceTab() {
   const draws = history.filter(r => r === 'DRAW').length;
   const losses = history.filter(r => r === 'LOST').length;
 
-  // Шанс победы: взвешенное среднее (последние 5 игр × 0.6 + общий винрейт × 0.4)
+  // Механика «полосы»: считаем текущую серию побед/поражений подряд
   const totalGames = history.length;
   const overallWinRate = totalGames > 0 ? wins / totalGames : 0;
-  const last5 = history.slice(0, 5);
-  const last5wins = last5.filter(r => r === 'WIN').length;
-  const recentRate = last5.length > 0 ? last5wins / last5.length : 0;
-  const forecast = totalGames >= 3
-    ? Math.round((recentRate * 0.6 + overallWinRate * 0.4) * 100)
+
+  // Длина текущей непрерывной серии (без DRAW)
+  let streak = 0;
+  let streakType: 'WIN' | 'LOST' | null = null;
+  for (const r of history) {
+    if (r === 'DRAW') continue;
+    if (streakType === null) { streakType = r; streak = 1; }
+    else if (r === streakType) streak++;
+    else break;
+  }
+
+  // База = общий винрейт (минимум 30%, максимум 70%)
+  const base = Math.max(30, Math.min(70, Math.round(overallWinRate * 100)));
+
+  // Бонус за серию: каждое подряд поражение +8%, каждая победа −8% (кап ±32%)
+  const streakBonus = streakType === 'LOST'
+    ? Math.min(streak * 8, 32)
+    : streakType === 'WIN'
+    ? -Math.min(streak * 8, 32)
+    : 0;
+
+  const forecast = totalGames >= 2
+    ? Math.max(5, Math.min(95, base + streakBonus))
+    : null;
+
+  const streakLabel = streakType === 'LOST' && streak >= 2
+    ? `🔥 ${streak} ПОРАЖЕНИЯ ПОДРЯД`
+    : streakType === 'WIN' && streak >= 2
+    ? `⚡ ${streak} ПОБЕДЫ ПОДРЯД`
     : null;
 
   const iconMap: Record<DiceResult, { emoji: string; color: string }> = {
@@ -651,6 +675,18 @@ function DiceTab() {
 
       {forecast !== null && (
         <div className="rounded-xl p-4 gold-border animate-pop-in" style={{ background: 'var(--bg-card)' }}>
+          {streakLabel && (
+            <div
+              className="text-center mb-2 py-1 rounded font-display text-xs tracking-widest"
+              style={{
+                background: streakType === 'LOST' ? 'rgba(76,175,80,0.1)' : 'rgba(239,83,80,0.1)',
+                color: streakType === 'LOST' ? '#4CAF50' : '#EF5350',
+                border: `1px solid ${streakType === 'LOST' ? 'rgba(76,175,80,0.3)' : 'rgba(239,83,80,0.3)'}`,
+              }}
+            >
+              {streakLabel}
+            </div>
+          )}
           <div className="flex items-center justify-between mb-2">
             <span className="font-display text-xs tracking-widest" style={{ color: 'var(--text-dim)' }}>
               ШАНС ПОБЕДЫ В СЛЕДУЮЩЕЙ
@@ -674,10 +710,12 @@ function DiceTab() {
           </div>
           <div className="flex justify-between mt-1.5">
             <span className="font-display text-xs" style={{ color: 'var(--text-dim)' }}>
-              Общий винрейт: <span style={{ color: 'var(--text-main)' }}>{Math.round(overallWinRate * 100)}%</span>
+              Винрейт: <span style={{ color: 'var(--text-main)' }}>{Math.round(overallWinRate * 100)}%</span>
             </span>
             <span className="font-display text-xs" style={{ color: 'var(--text-dim)' }}>
-              Последние 5: <span style={{ color: 'var(--text-main)' }}>{Math.round(recentRate * 100)}%</span>
+              Серия: <span style={{ color: 'var(--text-main)' }}>
+                {streakType ? `${streak}× ${streakType}` : '—'}
+              </span>
             </span>
           </div>
         </div>
