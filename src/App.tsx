@@ -40,6 +40,42 @@ function calcScore(cards: Card[]): number {
   return score;
 }
 
+// ─── Win Chance Calculator ────────────────────────────────────────────────────
+
+// Таблица преимущества диллера по открытой карте (базовая стратегия, 6 колод)
+// Значение = базовый шанс ПОБЕДЫ игрока при оптимальной игре
+const DEALER_CARD_WIN_BASE: Record<number, number> = {
+  2: 64, 3: 66, 4: 68, 5: 70, 6: 71,   // слабые карты диллера
+  7: 58, 8: 55, 9: 50, 10: 44, 11: 40,  // сильные (10=10,J,Q,K; 11=A)
+};
+
+function calcWinChance(playerCards: Card[], dealerCard: Card | null): number | null {
+  const filled = playerCards.filter(Boolean);
+  if (filled.length < 2 || !dealerCard) return null;
+
+  const playerScore = calcScore(playerCards);
+  if (playerScore > 21) return 0;
+  if (playerScore === 21) return filled.length === 2 ? 98 : 92; // блэкджек / 21
+
+  const dv = Math.min(cardNumericValue(dealerCard.value), 11);
+  let base = DEALER_CARD_WIN_BASE[dv] ?? 50;
+
+  // Корректировки по счёту игрока
+  if (playerScore >= 20) base += 12;
+  else if (playerScore >= 19) base += 8;
+  else if (playerScore >= 18) base += 4;
+  else if (playerScore >= 17) base += 1;
+  else if (playerScore <= 11) base -= 5; // ещё добираем карты — риск
+  else if (playerScore <= 13) base -= 3;
+
+  // Мягкая рука (с тузом): меньше риск перебора
+  const hasAce = filled.some(c => (c as NonNullable<Card>).value === 'A');
+  const isSoft = hasAce && playerScore <= 21;
+  if (isSoft && playerScore >= 17 && playerScore <= 19) base += 3;
+
+  return Math.max(5, Math.min(97, Math.round(base)));
+}
+
 function getSuggestion(playerCards: Card[], dealerCard: Card | null, canSplit: boolean, canDouble: boolean): Suggestion {
   const filled = playerCards.filter(Boolean) as NonNullable<Card>[];
   const score = calcScore(playerCards);
@@ -236,6 +272,36 @@ function SuggestionBadge({ suggestion }: { suggestion: Suggestion | null }) {
   );
 }
 
+// ─── Win Chance Badge ─────────────────────────────────────────────────────────
+
+function WinChanceBadge({ chance }: { chance: number | null }) {
+  if (chance === null) return null;
+  const color = chance >= 65 ? '#4CAF50' : chance >= 45 ? '#FDD835' : '#EF5350';
+  const label = chance >= 65 ? 'ВЫСОКИЙ' : chance >= 45 ? 'СРЕДНИЙ' : 'НИЗКИЙ';
+  const barWidth = `${chance}%`;
+  return (
+    <div
+      className="rounded-lg p-3 animate-pop-in"
+      style={{ background: 'var(--bg-slot)', border: `1px solid ${color}40` }}
+    >
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="font-display text-xs tracking-widest" style={{ color: 'var(--text-dim)' }}>
+          ШАНС ПОБЕДЫ
+        </span>
+        <span className="font-display text-sm font-bold" style={{ color }}>
+          {chance}% <span className="text-xs font-normal" style={{ color: 'var(--text-dim)' }}>({label})</span>
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: barWidth, background: color, boxShadow: `0 0 6px ${color}80` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── Blackjack Tab ────────────────────────────────────────────────────────────
 
 interface BlackjackStats {
@@ -278,6 +344,9 @@ function BlackjackTab() {
   const splitSuggestion = isSplit && splitCards.filter(Boolean).length >= 1
     ? getSuggestion(splitCards, dealerOpen, false, false)
     : null;
+
+  const winChance = calcWinChance(playerCards, dealerOpen);
+  const splitWinChance = isSplit ? calcWinChance(splitCards, dealerOpen) : null;
 
   const handleSlotClick = (hand: 'dealer' | 'player' | 'split', index: number) => {
     setActiveSlot({ hand, index });
@@ -430,6 +499,11 @@ function BlackjackTab() {
                     ))}
                   </div>
                   {isActive && sugg && <SuggestionBadge suggestion={sugg} />}
+                  {isActive && (
+                    <div className="mt-2">
+                      <WinChanceBadge chance={hand === 'player' ? winChance : splitWinChance} />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -465,7 +539,8 @@ function BlackjackTab() {
                 />
               ))}
             </div>
-            {suggestion && <div className="mb-3"><SuggestionBadge suggestion={suggestion} /></div>}
+            {suggestion && <div className="mb-2"><SuggestionBadge suggestion={suggestion} /></div>}
+            {winChance !== null && <div className="mb-3"><WinChanceBadge chance={winChance} /></div>}
             {!isDoubled && playerFilled.length >= 2 && (canSplit || canDouble) && (
               <div className="flex gap-2 mt-2">
                 {canSplit && (
@@ -544,10 +619,14 @@ function DiceTab() {
   const draws = history.filter(r => r === 'DRAW').length;
   const losses = history.filter(r => r === 'LOST').length;
 
-  const last10 = history.slice(0, 10);
-  const last10wins = last10.filter(r => r === 'WIN').length;
-  const forecast = last10.length >= 3
-    ? Math.max(20, Math.min(80, Math.round((last10wins / last10.length) * 100) + Math.floor(Math.random() * 11) - 5))
+  // Шанс победы: взвешенное среднее (последние 5 игр × 0.6 + общий винрейт × 0.4)
+  const totalGames = history.length;
+  const overallWinRate = totalGames > 0 ? wins / totalGames : 0;
+  const last5 = history.slice(0, 5);
+  const last5wins = last5.filter(r => r === 'WIN').length;
+  const recentRate = last5.length > 0 ? last5wins / last5.length : 0;
+  const forecast = totalGames >= 3
+    ? Math.round((recentRate * 0.6 + overallWinRate * 0.4) * 100)
     : null;
 
   const iconMap: Record<DiceResult, { emoji: string; color: string }> = {
@@ -571,14 +650,36 @@ function DiceTab() {
       </div>
 
       {forecast !== null && (
-        <div className="rounded-xl p-3 text-center gold-border animate-pop-in" style={{ background: 'var(--bg-card)' }}>
-          <span className="font-display text-xs tracking-widest" style={{ color: 'var(--text-dim)' }}>
-            ПРОГНОЗ:{' '}
-            <span className="font-bold" style={{ color: forecast >= 50 ? '#4CAF50' : '#EF5350' }}>
-              {forecast}% ПОБЕДА
+        <div className="rounded-xl p-4 gold-border animate-pop-in" style={{ background: 'var(--bg-card)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-display text-xs tracking-widest" style={{ color: 'var(--text-dim)' }}>
+              ШАНС ПОБЕДЫ В СЛЕДУЮЩЕЙ
             </span>
-            <span style={{ color: 'var(--text-dim)' }}> (±5%)</span>
-          </span>
+            <span
+              className="font-display text-sm font-bold"
+              style={{ color: forecast >= 60 ? '#4CAF50' : forecast >= 40 ? '#FDD835' : '#EF5350' }}
+            >
+              {forecast}%
+            </span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${forecast}%`,
+                background: forecast >= 60 ? '#4CAF50' : forecast >= 40 ? '#FDD835' : '#EF5350',
+                boxShadow: `0 0 8px ${forecast >= 60 ? '#4CAF5080' : forecast >= 40 ? '#FDD83580' : '#EF535080'}`,
+              }}
+            />
+          </div>
+          <div className="flex justify-between mt-1.5">
+            <span className="font-display text-xs" style={{ color: 'var(--text-dim)' }}>
+              Общий винрейт: <span style={{ color: 'var(--text-main)' }}>{Math.round(overallWinRate * 100)}%</span>
+            </span>
+            <span className="font-display text-xs" style={{ color: 'var(--text-dim)' }}>
+              Последние 5: <span style={{ color: 'var(--text-main)' }}>{Math.round(recentRate * 100)}%</span>
+            </span>
+          </div>
         </div>
       )}
 
