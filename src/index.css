@@ -4,89 +4,47 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 88%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 88%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 88%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 0 0% 7%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 88%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 62%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 45 100% 50%;
+    --accent-foreground: 0 0% 7%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 45 30% 20%;
+    --input: 0 0% 15%;
+    --ring: 45 100% 50%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --gold: #ffd700;
+    --gold-dim: rgba(255, 215, 0, 0.15);
+    --gold-border: rgba(255, 215, 0, 0.4);
+    --bg-main: #121212;
+    --bg-card: #1e1e1e;
+    --bg-slot: #161616;
+    --text-main: #e0e0e0;
+    --text-dim: #9e9e9e;
+    --red-card: #e53935;
+    --green-win: #43a047;
+    --yellow-draw: #fdd835;
   }
 }
 
@@ -97,5 +55,235 @@
 
   body {
     @apply bg-background text-foreground;
+    background-color: var(--bg-main);
+    font-family: "Roboto", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Oswald", sans-serif;
+  }
+
+  .gold-border {
+    border: 1px solid var(--gold-border);
+  }
+
+  .gold-text {
+    color: var(--gold);
+  }
+
+  .card-slot {
+    background: var(--bg-slot);
+    border: 1px solid var(--gold-border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+
+  .card-slot:hover {
+    border-color: var(--gold);
+    background: rgba(255, 215, 0, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.2);
+  }
+
+  .card-slot.active {
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+  }
+
+  .card-slot.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .card-slot.locked:hover {
+    transform: none;
+    border-color: var(--gold-border);
+    background: var(--bg-slot);
+    box-shadow: none;
+  }
+
+  .btn-gold {
+    background: var(--gold);
+    color: #121212;
+    font-family: "Oswald", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-gold:hover {
+    background: #ffe44d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+  }
+
+  .btn-gold:active {
+    transform: translateY(0);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: "Oswald", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--gold-border);
+    color: var(--gold);
+  }
+
+  .btn-win {
+    background: rgba(67, 160, 71, 0.15);
+    color: #4caf50;
+    border: 1px solid rgba(67, 160, 71, 0.4);
+    font-family: "Oswald", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-win:hover {
+    background: rgba(67, 160, 71, 0.3);
+    box-shadow: 0 0 16px rgba(67, 160, 71, 0.3);
+  }
+
+  .btn-lost {
+    background: rgba(229, 57, 53, 0.15);
+    color: #ef5350;
+    border: 1px solid rgba(229, 57, 53, 0.4);
+    font-family: "Oswald", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-lost:hover {
+    background: rgba(229, 57, 53, 0.3);
+    box-shadow: 0 0 16px rgba(229, 57, 53, 0.3);
+  }
+
+  .btn-draw {
+    background: rgba(253, 216, 53, 0.12);
+    color: #fdd835;
+    border: 1px solid rgba(253, 216, 53, 0.35);
+    font-family: "Oswald", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-draw:hover {
+    background: rgba(253, 216, 53, 0.25);
+    box-shadow: 0 0 16px rgba(253, 216, 53, 0.25);
+  }
+
+  .suit-red {
+    color: var(--red-card);
+  }
+
+  .suit-black {
+    color: var(--text-main);
+  }
+
+  .suggestion-hit {
+    color: #ef5350;
+    background: rgba(239, 83, 80, 0.1);
+    border: 1px solid rgba(239, 83, 80, 0.3);
+  }
+
+  .suggestion-stand {
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+  }
+
+  .suggestion-double {
+    color: var(--gold);
+    background: var(--gold-dim);
+    border: 1px solid var(--gold-border);
+  }
+
+  .suggestion-split {
+    color: #42a5f5;
+    background: rgba(66, 165, 245, 0.1);
+    border: 1px solid rgba(66, 165, 245, 0.3);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes popIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    70% {
+      transform: scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes glowPulse {
+    0%,
+    100% {
+      box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease forwards;
+  }
+
+  .animate-pop-in {
+    animation: popIn 0.25s ease forwards;
+  }
+
+  .animate-glow {
+    animation: glowPulse 2s ease infinite;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
